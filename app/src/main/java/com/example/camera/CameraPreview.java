@@ -12,9 +12,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
+import android.media.Image;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -25,6 +29,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 
 // 카메라에서 가져온 영상을 보여주는 카메라 프리뷰 클래스
@@ -42,6 +47,8 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     private Size mPreviewSize;
     private boolean isPreview = false;
 
+    private int flag = 0;
+    private byte[][] yuvs;
     private AppCompatActivity mActivity;
 
 
@@ -64,6 +71,7 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
         // SurfaceHolder.Callback를 등록하여 surface의 생성 및 해제 시점을 감지
         mHolder = mSurfaceView.getHolder();
         mHolder.addCallback(this);
+        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
     }
 
@@ -120,6 +128,7 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
         // Open an instance of the camera
         try {
             mCamera = Camera.open(mCameraID); // attempt to get a Camera instance
+
         } catch (Exception e) {
             // Camera is not available (in use or does not exist)
             Log.e(TAG, "Camera " + mCameraID + " is not available: " + e.getMessage());
@@ -154,9 +163,10 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
 
 
         try {
-
+            mCamera.setPreviewCallback(this);
             mCamera.setPreviewDisplay(holder);
-
+            System.out.println("Holder");
+            System.out.println(holder);
 
             // Important: Call startPreview() to start updating the preview
             // surface. Preview must be started before you can take a picture.
@@ -245,6 +255,7 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
         mCamera.setDisplayOrientation(orientation);
 
         try {
+            mCamera.setPreviewCallback(this);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
             Log.d(TAG, "Camera preview started.");
@@ -350,7 +361,33 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        CameraPreview.this.notify();
+        Log.i(TAG, "onPreviewFrame");
+
+        if(data == null) {
+            return;
+        }
+
+
+        Camera.Parameters paramters = camera.getParameters();
+        int format = paramters.getPreviewFormat();
+        YuvImage yuv_image = new YuvImage(data, format, 100, 100, null);
+
+        if(format == ImageFormat.NV21 || format == ImageFormat.YUY2 || format == ImageFormat.NV16) {
+            Rect rect = new Rect(0, 0, 100, 100);
+            ByteArrayOutputStream output_stream = new ByteArrayOutputStream();
+
+        }
+        int count = 0;
+        if (flag == 0) {
+            for( byte b: data) {
+                count++;
+
+                System.out.print(b);
+            }
+        } else {
+
+        }
+        flag = 1;
     }
 
 
