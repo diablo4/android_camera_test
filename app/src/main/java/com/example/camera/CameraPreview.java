@@ -47,8 +47,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     private Size mPreviewSize;
     private boolean isPreview = false;
 
-    private int flag = 0;
-    private byte[][] yuvs;
     private AppCompatActivity mActivity;
 
 
@@ -57,7 +55,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
 
 
         Log.d("@@@", "Preview");
-
 
 
         mActivity = activity;
@@ -91,7 +88,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     }
 
 
-
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         if (changed && getChildCount() > 0) {
@@ -121,7 +117,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     }
 
 
-
     // Surface가 생성되었을 때 어디에 화면에 프리뷰를 출력할지 알려줘야 한다.
     public void surfaceCreated(SurfaceHolder holder) {
 
@@ -146,8 +141,7 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
         mCamera.setDisplayOrientation(orientation);
 
 
-
-        mSupportedPreviewSizes =  mCamera.getParameters().getSupportedPreviewSizes();
+        mSupportedPreviewSizes = mCamera.getParameters().getSupportedPreviewSizes();
         requestLayout();
 
         // get Camera parameters
@@ -165,8 +159,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
         try {
             mCamera.setPreviewCallback(this);
             mCamera.setPreviewDisplay(holder);
-            System.out.println("Holder");
-            System.out.println(holder);
 
             // Important: Call startPreview() to start updating the preview
             // surface. Preview must be started before you can take a picture.
@@ -178,7 +170,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
         }
 
     }
-
 
 
     public void surfaceDestroyed(SurfaceHolder holder) {
@@ -229,7 +220,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     }
 
 
-
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 
         // If your preview can change or rotate, take care of those events here.
@@ -266,7 +256,6 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     }
 
 
-
     /**
      * 안드로이드 디바이스 방향에 맞는 카메라 프리뷰를 화면에 보여주기 위해 계산합니다.
      */
@@ -300,8 +289,7 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
     }
 
 
-
-    public void takePicture(){
+    public void takePicture() {
 
         mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
     }
@@ -333,13 +321,13 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
             //byte array를 bitmap으로 변환
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-            Bitmap bitmap = BitmapFactory.decodeByteArray( data, 0, data.length, options);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
 
             //이미지를 디바이스 방향으로 회전
             Matrix matrix = new Matrix();
             matrix.postRotate(orientation);
-            bitmap =  Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
+            bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
 
             //bitmap을 byte array로 변환
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -350,44 +338,57 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
             new SaveImageTask().execute(currentData);
 
             System.out.println("------------------------ file bytes----------------------------");
-
-
-//            for(byte x : currentData) {
-//                System.out.println(x);
-//            }
-
         }
     };
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         Log.i(TAG, "onPreviewFrame");
+        CameraActivity mCameraActivity = new CameraActivity();
 
-        if(data == null) {
-            return;
+        Camera.Parameters parameters = camera.getParameters();
+        int width = parameters.getPreviewSize().width;
+        int height = parameters.getPreviewSize().height;
+
+        YuvImage yuv = new YuvImage(data, parameters.getPreviewFormat(), width, height, null);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        yuv.compressToJpeg(new Rect(0, 0, width, height), 50, out);
+
+        byte[] bytes = out.toByteArray();
+        BitmapFactory.Options bm = new BitmapFactory.Options();
+        final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bm);
+//        final byte[] bytess = bytes;
+//        System.out.println(bitmap);
+//        System.out.println(bitmap instanceof Bitmap);
+//        System.out.println(bitmap);
+        System.out.println(bitmap.getByteCount());
+        System.out.println(bitmap.getNinePatchChunk());
+        System.out.println(bitmap.getPixel(0,0));
+        for(byte x : yuv.getYuvData()) {
+            System.out.print(x);
+        }
+        for(byte x : data) {
+            System.out.print(x);
+        }
+        if (bitmap.getNinePatchChunk() != null) {
+            mCameraActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ((ImageView) findViewById(R.id.loopback)).setImageBitmap(bitmap);
+                }
+            });
         }
 
 
-        Camera.Parameters paramters = camera.getParameters();
-        int format = paramters.getPreviewFormat();
-        YuvImage yuv_image = new YuvImage(data, format, 100, 100, null);
+//        CameraPreview.this.mActivity.runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                findViewById(R.id.second_preview);
+//                System.out.print(bitmap);
+//            }
+//        });
 
-        if(format == ImageFormat.NV21 || format == ImageFormat.YUY2 || format == ImageFormat.NV16) {
-            Rect rect = new Rect(0, 0, 100, 100);
-            ByteArrayOutputStream output_stream = new ByteArrayOutputStream();
-
-        }
-        int count = 0;
-        if (flag == 0) {
-            for( byte b: data) {
-                count++;
-
-                System.out.print(b);
-            }
-        } else {
-
-        }
-        flag = 1;
     }
 
 
@@ -400,7 +401,7 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
 
             try {
 
-                File path = new File (Environment.getExternalStorageDirectory().getAbsolutePath() + "/DCIM/Camera");
+                File path = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/DCIM/Camera");
                 if (!path.exists()) {
                     path.mkdirs();
                 }
@@ -421,10 +422,9 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
 
 
                 // 갤러리에 반영
-                Intent mediaScanIntent = new Intent( Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
                 mediaScanIntent.setData(Uri.fromFile(outputFile));
                 getContext().sendBroadcast(mediaScanIntent);
-
 
 
                 try {
@@ -445,5 +445,47 @@ class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.
             return null;
         }
 
+    }
+
+    static public void decodeYUV420SP(int[] rgba, byte[] yuv420sp, int width,
+                                      int height) {
+        final int frameSize = width * height;
+
+        for (int j = 0, yp = 0; j < height; j++) {
+            int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
+            for (int i = 0; i < width; i++, yp++) {
+                int y = (0xff & ((int) yuv420sp[yp])) - 16;
+                if (y < 0)
+                    y = 0;
+                if ((i & 1) == 0) {
+                    v = (0xff & yuv420sp[uvp++]) - 128;
+                    u = (0xff & yuv420sp[uvp++]) - 128;
+                }
+
+                int y1192 = 1192 * y;
+                int r = (y1192 + 1634 * v);
+                int g = (y1192 - 833 * v - 400 * u);
+                int b = (y1192 + 2066 * u);
+
+                if (r < 0)
+                    r = 0;
+                else if (r > 262143)
+                    r = 262143;
+                if (g < 0)
+                    g = 0;
+                else if (g > 262143)
+                    g = 262143;
+                if (b < 0)
+                    b = 0;
+                else if (b > 262143)
+                    b = 262143;
+
+                // rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) &
+                // 0xff00) | ((b >> 10) & 0xff);
+                // rgba, divide 2^10 ( >> 10)
+                rgba[yp] = ((r << 14) & 0xff000000) | ((g << 6) & 0xff0000)
+                        | ((b >> 2) | 0xff00);
+            }
+        }
     }
 }

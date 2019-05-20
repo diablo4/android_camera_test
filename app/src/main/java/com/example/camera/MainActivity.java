@@ -1,6 +1,7 @@
 package com.example.camera;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -18,10 +19,13 @@ import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity
     implements ActivityCompat.OnRequestPermissionsResultCallback {
 
+    public static final String EXTRA_MESSAGE = "com.example.Camera.MESSAGE";
     private static final String TAG = "android_camera_example";
     private static final int PERMISSIONS_REQUEST_CODE = 100;
     String[] REQUIRED_PERMISSIONS = {Manifest.permission.CAMERA,
@@ -51,6 +55,7 @@ public class MainActivity extends AppCompatActivity
 
         surfaceView.setVisibility(View.GONE);
 
+        TextView text =findViewById(R.id.test_text);
         Button button = findViewById(R.id.button_main_capture);
         button.setOnClickListener(new View.OnClickListener(){
 
@@ -62,10 +67,10 @@ public class MainActivity extends AppCompatActivity
 
         if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             int cameraPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-            int wirteExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int writeExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
             if(cameraPermission == PackageManager.PERMISSION_GRANTED &&
-                wirteExternalStoragePermission == PackageManager.PERMISSION_GRANTED) {
+                    writeExternalStoragePermission == PackageManager.PERMISSION_GRANTED) {
                 startCamera();
             } else {
                 if(ActivityCompat.shouldShowRequestPermissionRationale(this, REQUIRED_PERMISSIONS[0]) ||
@@ -101,7 +106,6 @@ public class MainActivity extends AppCompatActivity
     void startCamera() {
         mCameraPreview = new CameraPreview(this,this,CAMERA_FACING, surfaceView);
     }
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissinos, @NonNull int[] grandResults) {
